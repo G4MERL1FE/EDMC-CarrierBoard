@@ -23,7 +23,7 @@ An EDMC plugin that brings the Elite Carrier Job Board directly into Elite Dange
 
 ## Website
 
-https://ed-carrier-board.th3-g4mer-l1fe.workers.dev
+carrierboard.738294016.xyz
 
 ## Notes
 
