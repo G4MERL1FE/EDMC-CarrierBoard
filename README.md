@@ -1,5 +1,6 @@
 # CarrierBoard — EDMC Plugin
-
+✨ Officially available in the EDMC Plugin Browser! ✨
+Just open EDMC → Settings → Plugins, search for "CarrierBoard", and click Install.
 An EDMC plugin that brings the Elite Carrier Job Board directly into Elite Dangerous.
 
 ## Features
