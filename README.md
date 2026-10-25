@@ -21,7 +21,7 @@ CarrierBoard brings the shared Elite Dangerous carrier job board and scanner-der
 
 1. Close EDMC.
 2. Back up your existing `CarrierBoard` plugin folder.
-3. Extract `CarrierBoard.zip` into `%LOCALAPPDATA%\EDMarketConnector\plugins\` so the path is `plugins\CarrierBoard\load.py`.
+3. Extract the downloaded ZIP's contained `CarrierBoard` folder into `%LOCALAPPDATA%\EDMarketConnector\plugins\` so the path is `plugins\CarrierBoard\load.py`.
 4. Restart EDMC and open the CarrierBoard panel.
 
 Requires EDMC 6.1.0 or later and an internet connection.
