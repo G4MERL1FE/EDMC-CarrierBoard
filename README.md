@@ -1,43 +1,37 @@
 # CarrierBoard — EDMC Plugin
 
-✨ Officially available in the EDMC Plugin Browser! ✨  
-Open **EDMC → Settings → Plugins**, search for **CarrierBoard**, and click **Install**.
+✨ **Officially available in the EDMC Plugin Browser!** ✨
 
-CarrierBoard brings the Elite Dangerous Fleet Carrier community job board and scanner-discovered trade opportunities into EDMC.
+Open EDMC → Settings → Plugins, search for **CarrierBoard**, and click Install.
 
-## Features
+CarrierBoard brings the shared Elite Dangerous carrier job board and scanner-derived Trade Opportunities into EDMC.
 
-- **Community Jobs** — view shared carrier trade jobs, with current job details and completion controls.
-- **Post jobs** — create a listing from EDMC; carrier name, callsign and system details are cached for convenience.
-- **PIN-protected jobs** — complete protected listings by entering their PIN; the PIN is not written to debug logs.
-- **Trade Opportunities** — view scanner-discovered buy/sell routes separately from community-posted carrier jobs.
-- **Scanner filtering** — filter opportunities by commodity, loading/unloading system, or station.
-- **Trade details** — buy and sell prices, estimated margin per tonne, estimated volume, and estimated total profit.
-- **Market freshness warnings** — reports older than 12 hours are highlighted for in-game verification; the scanner API filters routes beyond its 24-hour freshness window.
-- **Shared feeds** — the plugin reads the same public CarrierBoard API used by the website and refreshes in the background every five minutes.
+## Features in v1.0.3
 
-Scanner opportunities are suggestions only. They are not confirmed carrier jobs, cannot be claimed on the community board, and market data should be checked in-game before travelling.
+- **Community Jobs** tab for viewing, posting, and completing community carrier jobs.
+- **Trade Opportunities** tab with scanner routes, buy/sell systems and stations, prices, margin per tonne, estimated volume, estimated total profit, and market report age.
+- Filter trade opportunities by commodity, system, or station.
+- Black-and-orange cards, buttons, and outlined tabs.
+- Market reports over 12 hours old are highlighted for in-game verification; the API filters reports older than 24 hours.
+- Both feeds use `https://carrierboard.738294016.xyz`.
+- PINs are not written to debug logs; delete query parameters are encoded safely.
+- Periodic refresh stops when EDMC shuts down, and API response shapes are validated before rendering.
 
-## Installation
+## Manual installation
 
-1. Download the latest plugin ZIP from the [Releases page](https://github.com/G4MERL1FE/EDMC-CarrierBoard/releases/latest).
-2. Extract the contained **CarrierBoard** folder into `%LOCALAPPDATA%\\EDMarketConnector\\plugins\\`.
-3. Restart EDMC.
-4. Look for the **CarrierBoard** panel in EDMC's main window.
+1. Close EDMC.
+2. Back up your existing `CarrierBoard` plugin folder.
+3. Extract `CarrierBoard.zip` into `%LOCALAPPDATA%\EDMarketConnector\plugins\` so the path is `plugins\CarrierBoard\load.py`.
+4. Restart EDMC and open the CarrierBoard panel.
 
-## Requirements
-
-- EDMC 6.1.0 or later.
-- An internet connection.
-
-## Website
-
-[carrierboard.738294016.xyz](https://carrierboard.738294016.xyz)
+Requires EDMC 6.1.0 or later and an internet connection.
 
 ## Notes
 
-Fleet Carrier market orders aren't exposed by Frontier's CAPI or the journal, so carrier jobs must be posted manually using the plugin's **Post Job** dialog.
+- Trade Opportunities are suggestions based on scanner market reports, not confirmed community jobs. Verify both markets in-game before travelling.
+- The plugin cannot automatically publish Fleet Carrier market orders.
+- Completing a community job changes the shared board for everyone.
 
-## License
+Website: https://carrierboard.738294016.xyz  
+Source: https://github.com/G4MERL1FE/EDMC-CarrierBoard
 
-MIT — see [LICENSE](LICENSE).
