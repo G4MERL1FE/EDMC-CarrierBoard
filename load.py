@@ -14,11 +14,20 @@ DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
 DEBUG_FILE = os.path.join(DESKTOP, "cb_debug.txt")
 CACHE_FILE = os.path.join(DESKTOP, "cb_carrier_cache.json")
 API_URL = "https://ed-carrier-board.th3-g4mer-l1fe.workers.dev/api/jobs"
+SCANNER_API_URL = "https://carrierboard.738294016.xyz/api/scanner/opportunities"
+
+BG = "#080808"
+PANEL = "#151515"
+ORANGE = "#ff8800"
+TEXT = "#f2f2f2"
+MUTED = "#b0b0b0"
 
 data_queue = Queue()
 ui_status = None
 ui_container = None
 ui_root = None
+scanner_container = None
+scanner_status = None
 
 cache = {
     "cmdr": "",
@@ -125,6 +134,7 @@ def post_job(payload):
 def background_loop():
     while True:
         fetch_jobs()
+        fetch_scanner_opportunities()
         time.sleep(300)
 
 
@@ -259,7 +269,10 @@ def open_post_dialog():
             "pin": pin,
         }
 
-        dbg(f"posting: {json.dumps(payload)}")
+        safe_payload = dict(payload)
+        if safe_payload.get("pin"):
+            safe_payload["pin"] = "[REDACTED]"
+        dbg(f"posting: {json.dumps(safe_payload)}")
         threading.Thread(target=post_job, args=(payload,), daemon=True).start()
         dlg.destroy()
 
@@ -306,30 +319,92 @@ def on_complete_click(job):
 def render_jobs(jobs):
     clear_children(ui_container)
     if not jobs:
-        tk.Label(ui_container, text="No active jobs", fg="gray", anchor="w").pack(fill="x", padx=6, pady=6)
+        tk.Label(ui_container, text="No active community jobs", fg=MUTED, bg=BG,
+                 anchor="w").pack(fill="x", padx=8, pady=8)
         return
     for j in jobs:
-        row = tk.Frame(ui_container, bd=1, relief="solid")
-        row.pack(fill="x", padx=4, pady=2)
-        line1 = tk.Frame(row)
-        line1.pack(fill="x", padx=4, pady=(4, 0))
+        row = tk.Frame(ui_container, bd=1, relief="solid", bg=PANEL,
+                       highlightbackground=ORANGE, highlightcolor=ORANGE)
+        row.pack(fill="x", padx=4, pady=3)
+        line1 = tk.Frame(row, bg=PANEL)
+        line1.pack(fill="x", padx=6, pady=(5, 0))
         action = str(j.get("action_type", "?"))
         commodity = str(j.get("commodity", "?"))
         profit = int(j.get("profit_per_ton", 0) or 0)
-        tk.Label(line1, text=f"[{action}]", width=11, anchor="w", fg="#ff8800").pack(side="left")
-        tk.Label(line1, text=commodity, anchor="w").pack(side="left", expand=True, fill="x")
-        tk.Label(line1, text=f"+{profit:,} CR/t", fg="green").pack(side="right")
-        tk.Label(row, text=f"  {j.get('system_name','?')} - {j.get('station_name','?')}", anchor="w").pack(fill="x", padx=4)
-        bottom = tk.Frame(row)
-        bottom.pack(fill="x", padx=4, pady=(0, 4))
+        tk.Label(line1, text=f"[{action}]", width=11, anchor="w",
+                 fg=ORANGE, bg=PANEL).pack(side="left")
+        tk.Label(line1, text=commodity, anchor="w", fg=TEXT, bg=PANEL,
+                 font=("", 9, "bold")).pack(side="left", expand=True, fill="x")
+        tk.Label(line1, text=f"+{profit:,} CR/t", fg=ORANGE, bg=PANEL).pack(side="right")
+        tk.Label(row, text=f"  {j.get('system_name','?')} - {j.get('station_name','?')}",
+                 anchor="w", fg=TEXT, bg=PANEL).pack(fill="x", padx=6, pady=(2, 0))
+        bottom = tk.Frame(row, bg=PANEL)
+        bottom.pack(fill="x", padx=6, pady=(2, 5))
         pin_tag = " [PIN]" if j.get("has_pin") else ""
-        tk.Label(
-            bottom,
-            text=f"  {j.get('carrier_name','?')} ({j.get('carrier_callsign','?')})  |  "
-                 f"{int(j.get('total_quantity', 0) or 0):,}t{pin_tag}",
-            anchor="w", fg="#aaa",
-        ).pack(side="left")
-        tk.Button(bottom, text="Complete", command=lambda job=j: on_complete_click(job)).pack(side="right")
+        tk.Label(bottom,
+                 text=f"  {j.get('carrier_name','?')} ({j.get('carrier_callsign','?')})  |  "
+                      f"{int(j.get('total_quantity', 0) or 0):,}t{pin_tag}",
+                 anchor="w", fg=MUTED, bg=PANEL).pack(side="left")
+        tk.Button(bottom, text="Complete", command=lambda job=j: on_complete_click(job),
+                  bg=PANEL, fg=ORANGE, activebackground=ORANGE,
+                  activeforeground=BG, relief="solid", bd=1).pack(side="right")
+
+
+def fetch_scanner_opportunities():
+    try:
+        r = requests.get(SCANNER_API_URL, timeout=12)
+        if r.ok:
+            data_queue.put(("scanner", r.json()))
+        else:
+            data_queue.put(("scanner_error", f"HTTP {r.status_code}"))
+    except Exception as e:
+        data_queue.put(("scanner_error", f"{type(e).__name__}: {e}"))
+
+
+def money(value):
+    try:
+        return f"{int(float(value or 0)):,}"
+    except (TypeError, ValueError, OverflowError):
+        return "0"
+
+
+def render_scanner(data):
+    clear_children(scanner_container)
+    routes = data.get("routes", []) if isinstance(data, dict) else []
+    generated = data.get("generated_at_utc", "unknown") if isinstance(data, dict) else "unknown"
+    tk.Label(scanner_container, text=f"Scanner snapshot: {generated} UTC",
+             fg=MUTED, bg=BG, anchor="w").pack(fill="x", padx=8, pady=(8, 4))
+    if not routes:
+        tk.Label(scanner_container, text="No trade opportunities currently available.",
+                 fg=MUTED, bg=BG, anchor="w").pack(fill="x", padx=8, pady=8)
+        return
+    for route in routes:
+        commodity = str(route.get("commodity", "Unknown commodity")).replace("_", " ").title()
+        loading = route.get("loading") or {}
+        unloading = route.get("unloading") or {}
+        profit = route.get("profit_per_tonne", route.get("profit_per_ton", 0))
+        volume = route.get("estimated_available_volume_tonnes", 0)
+        total = route.get("estimated_total_profit", 0)
+        card = tk.Frame(scanner_container, bd=1, relief="solid", bg=PANEL,
+                        highlightbackground=ORANGE, highlightcolor=ORANGE)
+        card.pack(fill="x", padx=4, pady=3)
+        tk.Label(card, text=f"{commodity}  |  {money(profit)} CR/t",
+                 fg=ORANGE, bg=PANEL, anchor="w", font=("", 9, "bold")).pack(fill="x", padx=7, pady=(6, 2))
+        load_text = f"LOAD  {loading.get('system', '?')} — {loading.get('station', '?')}"
+        unload_text = f"SELL  {unloading.get('system', '?')} — {unloading.get('station', '?')}"
+        tk.Label(card, text=load_text, fg=TEXT, bg=PANEL, anchor="w",
+                 wraplength=520, justify="left").pack(fill="x", padx=7, pady=1)
+        tk.Label(card, text=unload_text, fg=TEXT, bg=PANEL, anchor="w",
+                 wraplength=520, justify="left").pack(fill="x", padx=7, pady=1)
+        tk.Label(card, text=f"Est. volume: {money(volume)} t   |   Est. total profit: {money(total)} CR",
+                 fg=MUTED, bg=PANEL, anchor="w", wraplength=520,
+                 justify="left").pack(fill="x", padx=7, pady=(2, 6))
+
+
+def on_scanner_refresh():
+    if scanner_status is not None:
+        scanner_status.config(text="Loading trade opportunities…")
+    threading.Thread(target=fetch_scanner_opportunities, daemon=True).start()
 
 
 def poll_ui():
@@ -339,8 +414,16 @@ def poll_ui():
         while True:
             kind, payload = data_queue.get_nowait()
             if kind == "jobs":
-                ui_status.config(text=f"CarrierBoard: {len(payload)} job(s)")
+                ui_status.config(text=f"Community Jobs: {len(payload)}")
                 render_jobs(payload)
+            elif kind == "scanner":
+                render_scanner(payload)
+                if scanner_status is not None:
+                    count = len(payload.get("routes", [])) if isinstance(payload, dict) else 0
+                    scanner_status.config(text=f"Trade Opportunities: {count}")
+            elif kind == "scanner_error":
+                if scanner_status is not None:
+                    scanner_status.config(text=f"Trade Opportunities: {payload}")
             elif kind in ("info", "error"):
                 ui_status.config(text=f"CarrierBoard: {payload}")
     except Empty:
@@ -350,6 +433,7 @@ def poll_ui():
 
 def on_refresh():
     threading.Thread(target=fetch_jobs, daemon=True).start()
+    on_scanner_refresh()
 
 
 # ---------- EDMC hooks ----------
@@ -362,25 +446,65 @@ def plugin_start3(plugin_dir):
 
 
 def plugin_app(parent):
-    global ui_status, ui_container, ui_root
+    global ui_status, ui_container, ui_root, scanner_container, scanner_status
     ui_root = parent
-    outer = tk.Frame(parent)
-    header = tk.Frame(outer)
-    header.pack(fill="x", padx=4, pady=(4, 2))
-    ui_status = tk.Label(header, text="CarrierBoard: loading...", anchor="w")
-    ui_status.pack(side="left", fill="x", expand=True)
-    tk.Button(header, text="Post Job", command=open_post_dialog).pack(side="right", padx=(4, 0))
-    tk.Button(header, text="Refresh", command=on_refresh).pack(side="right")
 
-    canvas = tk.Canvas(outer, height=220, highlightthickness=0)
-    scrollbar = tk.Scrollbar(outer, orient="vertical", command=canvas.yview)
-    ui_container = tk.Frame(canvas)
-    ui_container.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    canvas.create_window((0, 0), window=ui_container, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
-    canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+    style = ttk.Style(parent)
+    try:
+        style.configure("CarrierBoard.TNotebook", background=BG, borderwidth=0)
+        style.configure("CarrierBoard.TNotebook.Tab", background=PANEL, foreground=ORANGE,
+                        padding=(10, 5), borderwidth=1)
+        style.map("CarrierBoard.TNotebook.Tab",
+                  background=[("selected", ORANGE), ("active", "#333333")],
+                  foreground=[("selected", BG), ("active", ORANGE)])
+    except tk.TclError:
+        pass
+
+    outer = tk.Frame(parent, bg=BG)
+    header = tk.Frame(outer, bg=BG)
+    header.pack(fill="x", padx=4, pady=(4, 2))
+    ui_status = tk.Label(header, text="CarrierBoard: loading...", anchor="w",
+                         fg=ORANGE, bg=BG)
+    ui_status.pack(side="left", fill="x", expand=True)
+    tk.Button(header, text="Post Job", command=open_post_dialog, bg=PANEL, fg=ORANGE,
+              activebackground=ORANGE, activeforeground=BG, relief="solid", bd=1).pack(side="right", padx=(4, 0))
+    tk.Button(header, text="Refresh", command=on_refresh, bg=PANEL, fg=ORANGE,
+              activebackground=ORANGE, activeforeground=BG, relief="solid", bd=1).pack(side="right")
+
+    notebook = ttk.Notebook(outer, style="CarrierBoard.TNotebook")
+    notebook.pack(fill="both", expand=True, padx=3, pady=3)
+
+    jobs_tab = tk.Frame(notebook, bg=BG)
+    scanner_tab = tk.Frame(notebook, bg=BG)
+    notebook.add(jobs_tab, text="Community Jobs")
+    notebook.add(scanner_tab, text="Trade Opportunities")
+
+    jobs_canvas = tk.Canvas(jobs_tab, height=220, highlightthickness=0, bg=BG, bd=0)
+    jobs_scrollbar = tk.Scrollbar(jobs_tab, orient="vertical", command=jobs_canvas.yview)
+    ui_container = tk.Frame(jobs_canvas, bg=BG)
+    ui_container.bind("<Configure>", lambda e: jobs_canvas.configure(scrollregion=jobs_canvas.bbox("all")))
+    jobs_canvas.create_window((0, 0), window=ui_container, anchor="nw")
+    jobs_canvas.configure(yscrollcommand=jobs_scrollbar.set)
+    jobs_canvas.pack(side="left", fill="both", expand=True)
+    jobs_scrollbar.pack(side="right", fill="y")
+
+    scanner_header = tk.Frame(scanner_tab, bg=BG)
+    scanner_header.pack(fill="x", padx=6, pady=(5, 2))
+    scanner_status = tk.Label(scanner_header, text="Loading trade opportunities…",
+                              fg=ORANGE, bg=BG, anchor="w")
+    scanner_status.pack(side="left", fill="x", expand=True)
+    tk.Button(scanner_header, text="Refresh", command=on_scanner_refresh, bg=PANEL, fg=ORANGE,
+              activebackground=ORANGE, activeforeground=BG, relief="solid", bd=1).pack(side="right")
+
+    scanner_canvas = tk.Canvas(scanner_tab, height=220, highlightthickness=0, bg=BG, bd=0)
+    scanner_scrollbar = tk.Scrollbar(scanner_tab, orient="vertical", command=scanner_canvas.yview)
+    scanner_container = tk.Frame(scanner_canvas, bg=BG)
+    scanner_container.bind("<Configure>", lambda e: scanner_canvas.configure(scrollregion=scanner_canvas.bbox("all")))
+    scanner_canvas.create_window((0, 0), window=scanner_container, anchor="nw")
+    scanner_canvas.configure(yscrollcommand=scanner_scrollbar.set)
+    scanner_canvas.pack(side="left", fill="both", expand=True)
+    scanner_scrollbar.pack(side="right", fill="y")
+
     ui_status.after(500, poll_ui)
     dbg("plugin_app: UI built")
     return outer
