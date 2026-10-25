@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.4 — Restore Community Jobs posting
+
+- Restored a visible **Post Job** button in the Community Jobs tab.
+- Wired the button to the existing validated job-posting dialog.
+- Left the Trade Opportunities tab and scanner API behavior unchanged.
+
 ## v1.0.3 — Trade Opportunities and visual refresh
 
 - Added a Trade Opportunities tab backed by the scanner opportunities API.
