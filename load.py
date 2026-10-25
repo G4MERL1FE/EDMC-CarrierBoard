@@ -18,7 +18,7 @@ from typing import Any
 import requests
 
 LOGGER = logging.getLogger(__name__)
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 BASE_URL = "https://carrierboard.738294016.xyz"
 JOBS_API_URL = f"{BASE_URL}/api/jobs"
@@ -639,7 +639,33 @@ def plugin_app(parent: tk.Misc) -> tk.Frame:
 
     jobs_tab = ttk.Frame(content_area, padding=2)
     scanner_tab = ttk.Frame(content_area, padding=2)
-    ui_container_jobs = _scrollable_frame(jobs_tab, height=300)
+
+    # Keep job creation visible in the Community Jobs tab. The dialog already
+    # exists, but without a button wired to it users have no way to post jobs.
+    jobs_toolbar = ttk.Frame(jobs_tab)
+    jobs_toolbar.pack(fill="x", padx=5, pady=(4, 2))
+    ttk.Label(jobs_toolbar, text="Share a carrier job with the community").pack(
+        side="left", padx=(2, 8)
+    )
+    tk.Button(
+        jobs_toolbar,
+        text="＋ Post Job",
+        command=open_post_dialog,
+        bg=UI_BLACK,
+        fg=ORANGE,
+        activebackground="#241300",
+        activeforeground="#ffb04a",
+        relief="solid",
+        bd=1,
+        highlightthickness=1,
+        highlightbackground=ORANGE,
+        highlightcolor=ORANGE,
+        padx=10,
+        pady=3,
+        cursor="hand2",
+        font=("TkDefaultFont", 9, "bold"),
+    ).pack(side="right")
+    ui_container_jobs = _scrollable_frame(jobs_tab, height=270)
 
     scanner_toolbar = ttk.Frame(scanner_tab)
     scanner_toolbar.pack(fill="x", padx=5, pady=(4, 2))
