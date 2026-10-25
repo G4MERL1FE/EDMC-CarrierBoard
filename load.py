@@ -18,6 +18,7 @@ from typing import Any
 import requests
 
 LOGGER = logging.getLogger(__name__)
+VERSION = "1.0.3"
 
 BASE_URL = "https://carrierboard.738294016.xyz"
 JOBS_API_URL = f"{BASE_URL}/api/jobs"
