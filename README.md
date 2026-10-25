@@ -6,7 +6,12 @@ Open EDMC → Settings → Plugins, search for **CarrierBoard**, and click Insta
 
 CarrierBoard brings the shared Elite Dangerous carrier job board and scanner-derived Trade Opportunities into EDMC.
 
-## Features in v1.0.3
+## Current release: v1.0.4
+
+- Restores the **＋ Post Job** button in the Community Jobs tab, connected to the existing job-posting form.
+- Keeps the current scanner feed and Trade Opportunities UI unchanged.
+
+## Features introduced in v1.0.3
 
 - **Community Jobs** tab for viewing, posting, and completing community carrier jobs.
 - **Trade Opportunities** tab with scanner routes, buy/sell systems and stations, prices, margin per tonne, estimated volume, estimated total profit, and market report age.
